@@ -13,8 +13,15 @@ function parseLocation(line: string): vscode.Location | undefined {
 	line = line.trim();
 	let parts = line.split(':');
 	if (parts.length < 2) return undefined;
-	const column = parts.length < 3 ? 0 : parseInt(parts[2]) - 1;
-	return new vscode.Location(vscode.Uri.file(parts[0]), new vscode.Position(parseInt(parts[1]) - 1, column));
+	parts[0] = parts[0].trim();
+	if (!parts[0]) return undefined;
+	const tryParseLineOrColNum = (s: string) => {
+		let val = parseInt(s) - 1;
+		if (!val || val < 0) return 0;
+		return val;
+	};
+	const column = parts.length < 3 ? 0 : tryParseLineOrColNum(parts[2]);
+	return new vscode.Location(vscode.Uri.file(parts[0]), new vscode.Position(tryParseLineOrColNum(parts[1]), column));
 }
 
 class DefSubprocess {
@@ -57,8 +64,9 @@ class DefSubprocess {
 			}
 		});
 		this.proc.on('exit', (exitCode) => {
-			this.logOut.appendLine('subprocess exited with code ' + exitCode);
 			this.result = this.stdout.join('').split('\n');
+			this.logOut.appendLine('subprocess exited with code ' + exitCode + ", lines received: " + this.result.length);
+
 			// Don't allow too many matches, it can grind the system to a halt.
 			if (this.result.length > 100) {
 				this.result = this.result.slice(0, 100);
@@ -90,7 +98,10 @@ class DefProvider implements vscode.DefinitionProvider {
 				for (let line of proc.result) {
 					let loc = parseLocation(line);
 					if (loc) {
+						this.logOut.appendLine('successfully parsed line: ' + line);
 						locations.push(loc);
+					} else {
+						this.logOut.appendLine('could not parse line: ' + line);
 					}
 				}
 				resolve(locations);

@@ -2,7 +2,7 @@
 	"name": "custom-definition-provider",
 	"displayName": "Custom Definition Provider",
 	"description": "Provides definitions for Go To Definition, using a user-defined script.",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "danh42",
 	"repository": {
 		"type": "git",
